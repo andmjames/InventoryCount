@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory Barcode Scanner</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f4;
+      --bg-tertiary: #f0efec;
+      --bg-info: #e6f1fb;
+      --bg-danger: #fcebeb;
+      --bg-success: #eaf3de;
+      --text-primary: #1a1a18;
+      --text-secondary: #5f5e5a;
+      --text-danger: #a32d2d;
+      --text-info: #185fa5;
+      --border: rgba(0,0,0,0.12);
+      --border-md: rgba(0,0,0,0.22);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1c;
+        --bg-secondary: #272725;
+        --bg-tertiary: #2e2e2b;
+        --bg-info: #042c53;
+        --bg-danger: #501313;
+        --bg-success: #173404;
+        --text-primary: #f0efec;
+        --text-secondary: #b4b2a9;
+        --text-danger: #f09595;
+        --text-info: #85b7eb;
+        --border: rgba(255,255,255,0.1);
+        --border-md: rgba(255,255,255,0.2);
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1.5rem 1rem;
+    }
+
+    #app {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .header i {
+      font-size: 24px;
+      color: var(--text-secondary);
+    }
+
+    .card {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.25rem;
+    }
+
+    .scan-body { padding: 1.25rem; }
+
+    .scan-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .scan-row i { font-size: 20px; color: var(--text-secondary); flex-shrink: 0; }
+
+    input[type="text"],
+    input[type="number"] {
+      flex: 1;
+      font-size: 15px;
+      font-family: var(--font);
+      padding: 8px 12px;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      outline: none;
+      height: 36px;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      border-color: var(--text-info);
+      box-shadow: 0 0 0 3px rgba(24,95,165,0.15);
+    }
+
+    input[type="text"]::placeholder,
+    input[type="number"]::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .prompt-box {
+      margin-top: 1rem;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      display: none;
+    }
+
+    .prompt-box label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .prompt-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-md);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background 0.1s;
+    }
+
+    button:hover { background: var(--bg-secondary); }
+    button:active { transform: scale(0.98); }
+
+    .table-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-header span { font-size: 14px; font-weight: 500; }
+
+    .count-badge {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      border-radius: 99px;
+      padding: 2px 10px;
+      font-weight: 400;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    td {
+      padding: 8px 12px;
+      border-bottom: 0.5px solid var(--border);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-secondary); }
+
+    .qty-input {
+      width: 90px;
+      font-size: 14px;
+      padding: 4px 8px;
+      text-align: right;
+      height: 30px;
+      flex: unset;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 4px 6px;
+      border-radius: var(--radius-md);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .btn-icon:hover { background: var(--bg-secondary); color: var(--text-primary); }
+    .btn-icon.danger:hover { color: var(--text-danger); background: var(--bg-danger); }
+
+    .empty-state {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .empty-state i {
+      font-size: 32px;
+      display: block;
+      margin-bottom: 8px;
+      opacity: 0.4;
+    }
+
+    .done-btn {
+      width: 100%;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 12px;
+      justify-content: center;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 100;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border);
+      padding: 1.5rem;
+      max-width: 380px;
+      width: 100%;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .modal-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-btns { display: flex; flex-direction: column; gap: 8px; }
+
+    .modal-btn {
+      padding: 10px 16px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-btn i { font-size: 18px; color: var(--text-secondary); }
+
+    .modal-btn .btn-desc {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .modal-btn .btn-sub {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+
+    .btn-cancel { color: var(--text-secondary); }
+
+    @keyframes flash {
+      0%   { background: var(--bg-info); }
+      100% { background: transparent; }
+    }
+
+    .flash td { animation: flash 0.5s ease; }
+
+    .error-border { border-color: var(--text-danger) !important; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <i class="ti ti-barcode" aria-hidden="true"></i>
+    <h1>Inventory Count</h1>
+  </div>
+
+  <!-- Scan input -->
+  <div class="card">
+    <div class="scan-body">
+      <div class="scan-row">
+        <i class="ti ti-scan" aria-hidden="true"></i>
+        <input
+          type="text"
+          id="barcodeInput"
+          placeholder="Scan barcode here…"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-label="Barcode input"
+        />
+      </div>
+      <div class="prompt-box" id="promptBox">
+        <label id="promptLabel"></label>
+        <div class="prompt-row">
+          <input type="number" id="qtyInput" min="0" step="any" placeholder="0" aria-label="Quantity" />
+          <button onclick="submitQty()"><i class="ti ti-plus" aria-hidden="true"></i> Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory table -->
+  <div class="card">
+    <div class="table-header">
+      <span><i class="ti ti-list" style="font-size:16px;vertical-align:-2px;margin-right:6px" aria-hidden="true"></i>Counted items</span>
+      <span class="count-badge" id="countBadge">0 items</span>
+    </div>
+    <table aria-label="Inventory counts">
+      <thead>
+        <tr>
+          <th>Item number</th>
+          <th>Unit of measure</th>
+          <th style="text-align:right">Units on hand</th>
+          <th style="width:72px"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr id="emptyRow">
+          <td colspan="4">
+            <div class="empty-state">
+              <i class="ti ti-barcode-off" aria-hidden="true"></i>
+              No items scanned yet
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Done button -->
+  <button class="done-btn" onclick="doneCount()">
+    <i class="ti ti-check" aria-hidden="true"></i> Done counting
+  </button>
+</div>
+
+<!-- Export type modal -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box">
+    <p class="modal-title" id="modalTitle">Choose inventory type</p>
+    <p class="modal-sub">This will export your count as a CSV file.</p>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="exportCSV('Full')">
+        <i class="ti ti-clipboard-list" aria-hidden="true"></i>
+        <div class="btn-desc">
+          <span>Full inventory count</span>
+          <span class="btn-sub">All items counted this session</span>
+        </div>
+      </button>
+      <button class="modal-btn" onclick="exportCSV('Partial')">
+        <i class="ti ti-clipboard" aria-hidden="true"></i>
+        <div class="btn-desc">
+          <span>Partial inventory count</span>
+          <span class="btn-sub">Subset of items counted</span>
+        </div>
+      </button>
+      <button class="modal-btn btn-cancel" onclick="closeModal()">
+        <i class="ti ti-x" aria-hidden="true"></i> Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let inventory = [];
+  let currentItem = null;
+  let currentUOM = null;
+
+  const barcodeInput = document.getElementById('barcodeInput');
+  const qtyInput     = document.getElementById('qtyInput');
+  const promptBox    = document.getElementById('promptBox');
+  const promptLabel  = document.getElementById('promptLabel');
+
+  barcodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleBarcode(); });
+  barcodeInput.addEventListener('change', () => { if (barcodeInput.value.trim()) handleBarcode(); });
+  qtyInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitQty(); });
+
+  function handleBarcode() {
+    const raw = barcodeInput.value.trim();
+    if (!raw) return;
+
+    const parts = raw.split('|');
+    if (parts.length < 2) {
+      barcodeInput.classList.add('error-border');
+      barcodeInput.value = '';
+      barcodeInput.placeholder = 'Invalid format — use ItemNumber|UOM';
+      setTimeout(() => {
+        barcodeInput.classList.remove('error-border');
+        barcodeInput.placeholder = 'Scan barcode here…';
+      }, 2500);
+      return;
+    }
+
+    currentItem = parts[0].trim().toUpperCase();
+    currentUOM  = parts.slice(1).join('|').trim();
+    barcodeInput.value = '';
+
+    promptLabel.textContent = `Enter the number of ${currentUOM}s of ${currentItem}`;
+    promptBox.style.display = 'block';
+    qtyInput.value = '';
+    qtyInput.focus();
+  }
+
+  function submitQty() {
+    const qty = parseFloat(qtyInput.value);
+    if (isNaN(qty) || qty < 0) { qtyInput.focus(); return; }
+
+    const existing = inventory.find(r => r.item === currentItem && r.uom === currentUOM);
+    if (existing) {
+      existing.qty += qty;
+      renderTable();
+      // Flash the updated row
+      setTimeout(() => {
+        const rows = document.querySelectorAll('#tableBody tr[data-item]');
+        rows.forEach(r => { if (r.dataset.item === currentItem) r.classList.add('flash'); });
+        setTimeout(() => rows.forEach(r => r.classList.remove('flash')), 600);
+      }, 30);
+    } else {
+      inventory.push({ item: currentItem, uom: currentUOM, qty });
+      renderTable();
+    }
+
+    promptBox.style.display = 'none';
+    qtyInput.value = '';
+    currentItem = null;
+    currentUOM  = null;
+    barcodeInput.focus();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const badge = document.getElementById('countBadge');
+    badge.textContent = inventory.length + (inventory.length === 1 ? ' item' : ' items');
+
+    if (inventory.length === 0) {
+      tbody.innerHTML = `
+        <tr id="emptyRow">
+          <td colspan="4">
+            <div class="empty-state">
+              <i class="ti ti-barcode-off" aria-hidden="true"></i>
+              No items scanned yet
+            </div>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = inventory.map((row, i) => `
+      <tr data-item="${escHtml(row.item)}">
+        <td style="font-weight:500">${escHtml(row.item)}</td>
+        <td style="color:var(--text-secondary)">${escHtml(row.uom)}</td>
+        <td style="text-align:right">
+          <input
+            class="qty-input"
+            type="number" min="0" step="any"
+            value="${row.qty}"
+            onchange="editQty(${i}, this.value)"
+            aria-label="Quantity for ${escHtml(row.item)}"
+          />
+        </td>
+        <td style="text-align:center">
+          <button class="btn-icon danger" onclick="deleteRow(${i})" title="Delete ${escHtml(row.item)}" aria-label="Delete ${escHtml(row.item)}">
+            <i class="ti ti-trash" aria-hidden="true"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function editQty(i, val) {
+    const n = parseFloat(val);
+    if (!isNaN(n) && n >= 0) {
+      inventory[i].qty = n;
+      document.getElementById('countBadge').textContent =
+        inventory.length + (inventory.length === 1 ? ' item' : ' items');
+    }
+  }
+
+  function deleteRow(i) {
+    inventory.splice(i, 1);
+    renderTable();
+  }
+
+  function doneCount() {
+    if (inventory.length === 0) {
+      barcodeInput.placeholder = 'Scan at least one item first!';
+      barcodeInput.focus();
+      setTimeout(() => barcodeInput.placeholder = 'Scan barcode here…', 2500);
+      return;
+    }
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function exportCSV(type) {
+    const now    = new Date();
+    const pad    = n => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    const filename = `${type} Inventory Count ${dateStr}.csv`;
+
+    // Combine totals for matching item + UOM pairs
+    const totals = {};
+    inventory.forEach(r => {
+      const key = r.item + '|' + r.uom;
+      if (!totals[key]) totals[key] = { item: r.item, uom: r.uom, qty: 0 };
+      totals[key].qty += r.qty;
+    });
+
+    const lines = ['Item Number,Unit of Measure,Units on Hand'];
+    Object.values(totals).forEach(r => {
+      const qty = Number.isInteger(r.qty) ? r.qty : parseFloat(r.qty.toFixed(4));
+      lines.push(`${r.item},${r.uom},${qty}`);
+    });
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    closeModal();
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Close modal on overlay click
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Auto-focus barcode field on load
+  barcodeInput.focus();
+</script>
+</body>
+</html>
